@@ -165,36 +165,34 @@ class Application implements ApplicationInterface
 
     /**
      * 开放平台代公众号调用API
-     * 用法：$app->getOfficalAccountClient($appid)->postJson($url, $data);
+     * 用法：$app->officialAccount($appid)->getClient()->postJson($url, $data);
      *
      *
      * @param string $appid
-     * @return \EasyWeChat\Kernel\HttpClient\AccessTokenAwareClient
+     * @return \EasyWeChat\OfficialAccount\Application
      * @author jiangsili@qq.com
      * @since  2022-03-29
      */
-    public function getOfficialAccountClient(string $appid)
+    public function officialAccount(string $appid)
     {
         $authorizerAccessToken = $this->getAuthorizerAccessToken($appid);
-        $app = $this->getOfficialAccount(new AuthorizerAccessToken($appid, $authorizerAccessToken));
-        return $app->getClient();
+        return $this->getOfficialAccount(new AuthorizerAccessToken($appid, $authorizerAccessToken));
     }
 
     /**
      * 开放平台代小程序调用API
-     * 用法：$app->getMiniAppClient($appid)->postJson($url, $data);
+     * 用法：$app->miniApp($appid)->getClient()->postJson($url, $data);
      *
      *
      * @param string $appid
-     * @return \EasyWeChat\Kernel\HttpClient\AccessTokenAwareClient
+     * @return \EasyWeChat\MiniApp\Application
      * @author jiangsili@qq.com
      * @since  2022-03-29
      */
-    public function getMiniAppClient(string $appid)
+    public function miniApp(string $appid)
     {
         $authorizerAccessToken = $this->getAuthorizerAccessToken($appid);
-        $app = $this->getMiniApp(new AuthorizerAccessToken($appid, $authorizerAccessToken));
-        return $app->getClient();
+        return $this->getMiniApp(new AuthorizerAccessToken($appid, $authorizerAccessToken));
     }
 
     /**
