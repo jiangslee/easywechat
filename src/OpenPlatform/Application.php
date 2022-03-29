@@ -10,6 +10,7 @@ use EasyWeChat\Kernel\Encryptor;
 use EasyWeChat\Kernel\Exceptions\HttpException;
 use EasyWeChat\Kernel\HttpClient\AccessTokenAwareClient;
 use EasyWeChat\Kernel\HttpClient\Response;
+use EasyWeChat\Kernel\Support\Arr;
 use EasyWeChat\Kernel\Traits\InteractWithCache;
 use EasyWeChat\Kernel\Traits\InteractWithClient;
 use EasyWeChat\Kernel\Traits\InteractWithConfig;
@@ -37,6 +38,9 @@ class Application implements ApplicationInterface
     protected ?AccountInterface $account = null;
     protected ?AccessTokenInterface $componentAccessToken = null;
     protected ?VerifyTicketInterface $verifyTicket = null;
+
+    public const ACCESS_TOKEN_CACHE_KEY = "easywechat.open_platform.authorize_app_id.%s";
+    public const REFRESH_TOKEN_CACHE_KEY = "easywechat.open_platform.authorize_app_id.refresh_token.%s";
 
     public function getAccount(): AccountInterface
     {
@@ -157,6 +161,66 @@ class Application implements ApplicationInterface
         $this->componentAccessToken = $componentAccessToken;
 
         return $this;
+    }
+
+    /**
+     * 开放平台代公众号调用API
+     * 用法：$app->getOfficalAccountClient($appid)->postJson($url, $data);
+     *
+     *
+     * @param string $appid
+     * @return \EasyWeChat\Kernel\HttpClient\AccessTokenAwareClient
+     * @author jiangsili@qq.com
+     * @since  2022-03-29
+     */
+    public function getOfficialAccountClient(string $appid)
+    {
+        $authorizerAccessToken = $this->getAuthorizerAccessToken($appid);
+        $app = $this->getOfficialAccount(new AuthorizerAccessToken($appid, $authorizerAccessToken));
+        return $app->getClient();
+    }
+
+    /**
+     * 开放平台代小程序调用API
+     * 用法：$app->getMiniAppClient($appid)->postJson($url, $data);
+     *
+     *
+     * @param string $appid
+     * @return \EasyWeChat\Kernel\HttpClient\AccessTokenAwareClient
+     * @author jiangsili@qq.com
+     * @since  2022-03-29
+     */
+    public function getMiniAppClient(string $appid)
+    {
+        $authorizerAccessToken = $this->getAuthorizerAccessToken($appid);
+        $app = $this->getMiniApp(new AuthorizerAccessToken($appid, $authorizerAccessToken));
+        return $app->getClient();
+    }
+
+    /**
+     * 获取授权公众号/小程序的接口调用凭据（令牌）.
+     *
+     * @param string $appid
+     * @return string
+     * @author jiangsili@qq.com
+     * @since  2022-03-29
+     */
+    public function getAuthorizerAccessToken(string $appid): string
+    {
+        $key = sprintf(self::ACCESS_TOKEN_CACHE_KEY, $appid);
+        $authorizerAccessToken = $this->getCache()->get($key);
+        if (empty($authorizerAccessToken)) {
+            $authRefreshToken = $this->getCache()->get(sprintf(self::REFRESH_TOKEN_CACHE_KEY, $appid));
+            if (empty($authRefreshToken)) {
+                throw new \RuntimeException(sprintf("appid: %s, 可能未授权，或扫码重新授权", $appid));
+            }
+            $tokenResult = $this->refreshAuthorizerToken($appid, $authRefreshToken);
+
+            $authorizerAccessToken = Arr::get($tokenResult, 'authorizer_access_token');
+            $authAccessTokenExpiresIn = Arr::get($tokenResult, 'expires_in', 7200);
+            $this->getCache()->set($key, $authorizerAccessToken, $authAccessTokenExpiresIn);
+        }
+        return $authorizerAccessToken;
     }
 
     /**
