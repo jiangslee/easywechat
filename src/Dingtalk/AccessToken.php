@@ -26,7 +26,7 @@ class AccessToken implements RefreshableAccessToken
         ?HttpClientInterface $httpClient = null
     ) {
         $this->httpClient = $httpClient ?? HttpClient::create(['base_uri' => 'https://oapi.dingtalk.com/']);
-        $this->cache = $cache ?? new Psr16Cache(new FilesystemAdapter(namespace: 'easywechat', defaultLifetime: 1500));
+        $this->cache = $cache ?? new Psr16Cache(new FilesystemAdapter(namespace: 'easydingtalk', defaultLifetime: 1500));
     }
 
     public function getKey(): string
@@ -77,6 +77,22 @@ class AccessToken implements RefreshableAccessToken
     public function toQuery(): array
     {
         return ['access_token' => $this->getToken()];
+    }
+
+    /**
+     * @return array<string, string>
+     * @throws \EasyWeChat\Kernel\Exceptions\HttpException
+     * @throws \Psr\SimpleCache\InvalidArgumentException
+     * @throws \Symfony\Contracts\HttpClient\Exception\ClientExceptionInterface
+     * @throws \Symfony\Contracts\HttpClient\Exception\DecodingExceptionInterface
+     * @throws \Symfony\Contracts\HttpClient\Exception\RedirectionExceptionInterface
+     * @throws \Symfony\Contracts\HttpClient\Exception\ServerExceptionInterface
+     * @throws \Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface
+     */
+    #[ArrayShape(['x-acs-dingtalk-access-token' => "string"])]
+    public function toHeader(): array
+    {
+        return ['x-acs-dingtalk-access-token' => $this->getToken()];
     }
 
     /**

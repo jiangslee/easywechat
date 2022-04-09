@@ -24,7 +24,7 @@ class JsApiTicket
         ?HttpClientInterface $httpClient = null
     ) {
         $this->httpClient = $httpClient ?? HttpClient::create(['base_uri' => 'https://oapi.dingtalk.com/']);
-        $this->cache = $cache ?? new Psr16Cache(new FilesystemAdapter(namespace: 'dingtalk', defaultLifetime: 1500));
+        $this->cache = $cache ?? new Psr16Cache(new FilesystemAdapter(namespace: 'easydingtalk', defaultLifetime: 1500));
     }
 
     /**
