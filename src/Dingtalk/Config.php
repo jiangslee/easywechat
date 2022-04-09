@@ -10,9 +10,10 @@ class Config extends \EasyWeChat\Kernel\Config
      * @var array<string>
      */
     protected array $requiredKeys = [
-        'corp_id',
+        'app_key',
         'secret',
         'token',
         'aes_key',
+        'agent_id'
     ];
 }

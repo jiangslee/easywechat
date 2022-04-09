@@ -167,7 +167,7 @@ class Application implements ApplicationInterface
     protected function getHttpClientDefaultOptions(): array
     {
         return \array_merge(
-            ['base_uri' => 'https://qyapi.weixin.qq.com/',],
+            ['base_uri' => 'https://oapi.dingtalk.com/',],
             (array)$this->config->get('http', [])
         );
     }
