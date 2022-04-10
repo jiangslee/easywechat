@@ -13,5 +13,5 @@ interface AccessToken
      */
     public function toQuery(): array;
 
-    public function toHeader():array;
+    public function toHeader(): array;
 }
