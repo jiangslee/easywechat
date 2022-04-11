@@ -8,9 +8,6 @@
             "email": "jiangsili@qq.com"
         }
     ],
-    "require": {
-        "w7corp/easywechat": "^6.4"
-    },
     "scripts": {
         "check-style": "php-cs-fixer fix --using-cache=no --diff --dry-run --allow-risky=yes --ansi",
         "fix-style": "php-cs-fixer fix --using-cache=no --allow-risky=yes --ansi"
@@ -22,5 +19,8 @@
     },
     "require-dev": {
         "friendsofphp/php-cs-fixer": "^3.8"
+    },
+    "require": {
+        "w7corp/easywechat": "6.x-dev"
     }
 }
