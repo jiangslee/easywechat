@@ -9,7 +9,7 @@
         }
     ],
     "require": {
-        "w7corp/easywechat": "^6.4"
+        "w7corp/easywechat": "6.x-dev"
     },
     "scripts": {
         "check-style": "php-cs-fixer fix --using-cache=no --diff --dry-run --allow-risky=yes --ansi",
