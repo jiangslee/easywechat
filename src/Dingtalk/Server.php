@@ -5,15 +5,16 @@ declare(strict_types=1);
 namespace EasySdk\Dingtalk;
 
 use EasyWeChat\Kernel\Contracts\Server as ServerInterface;
-use EasyWeChat\Kernel\Encryptor;
 use EasyWeChat\Kernel\HttpClient\RequestUtil;
 use EasyWeChat\Kernel\ServerResponse;
 use EasyWeChat\Kernel\Traits\DecryptXmlMessage;
 use EasyWeChat\Kernel\Traits\InteractWithHandlers;
 use EasyWeChat\Kernel\Traits\RespondXmlMessage;
+use EasyWeChat\Kernel\Support\Str;
 use Nyholm\Psr7\Response;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
+use EasyWeChat\Kernel\Exceptions\RuntimeException;
 
 class Server implements ServerInterface
 {
@@ -39,30 +40,24 @@ class Server implements ServerInterface
      */
     public function serve(): ResponseInterface
     {
-        $query = $this->request->getQueryParams();
+        $message = $this->getRequestMessage();
 
-        if (!empty($query['echostr'])) {
-            $response = $this->encryptor->decrypt(
-                $query['echostr'],
-                $query['msg_signature'] ?? '',
-                $query['nonce'] ?? '',
-                $query['timestamp'] ?? ''
+        try {
+            $defaultResponse = new Response(200, [], $this->encryptMessage('success', $this->encryptor));
+            $response = $this->handle($defaultResponse, $message);
+
+            if (!($response instanceof ResponseInterface)) {
+                $response = $defaultResponse;
+            }
+
+            return ServerResponse::make($response);
+        } catch (\Exception $e) {
+            return new Response(
+                500,
+                [],
+                \strval(\json_encode(['code' => 'ERROR', 'message' => $e->getMessage()], JSON_UNESCAPED_UNICODE))
             );
-
-            return new Response(200, [], $response);
         }
-
-        $message = Message::createFromRequest($this->request);
-
-        $this->prepend($this->decryptRequestMessage());
-
-        $response = $this->handle(new Response(200, [], 'SUCCESS'), $message);
-
-        if (!($response instanceof ResponseInterface)) {
-            $response = $this->transformToReply($response, $message, $this->encryptor);
-        }
-
-        return ServerResponse::make($response);
     }
 
     /**
@@ -216,6 +211,11 @@ class Server implements ServerInterface
         };
     }
 
+    public function encryptMessage(string $plainText, Encryptor $encryptor, string $nonce = null, int $timestamp = null): string
+    {
+        return $encryptor->encrypt($plainText, $nonce ?? Str::random(8), (int) $timestamp ?? time());
+    }
+
     protected function decryptRequestMessage(): \Closure
     {
         return function (Message $message, \Closure $next): mixed {
@@ -227,8 +227,41 @@ class Server implements ServerInterface
                 $query['timestamp'] ?? '',
                 $query['nonce'] ?? ''
             );
-
             return $next($message);
         };
+    }
+    /**
+     * @throws \EasyWeChat\Kernel\Exceptions\InvalidArgumentException
+     * @throws \EasyWeChat\Kernel\Exceptions\RuntimeException
+     */
+    public function getRequestMessage(?ServerRequestInterface $request = null): \EasyWeChat\Kernel\Message
+    {
+        $query = $this->request->getQueryParams();
+        $originContent = ($request ?? $this->request)->getBody()->getContents();
+        $attributes = \json_decode($originContent, true);
+
+        if (!\is_array($attributes)) {
+            throw new RuntimeException('Invalid request body.');
+        }
+
+        if (empty($attributes['encrypt'])) {
+            throw new RuntimeException('Invalid request.');
+        }
+
+        $attributes = \json_decode(
+            $this->encryptor->decrypt(
+                $attributes['encrypt'],
+                $query['msg_signature'] ?? '',
+                $query['nonce'] ?? '',
+                $query['timestamp'] ?? ''
+            ),
+            true
+        );
+
+        if (!\is_array($attributes)) {
+            throw new RuntimeException('Failed to decrypt request message.');
+        }
+
+        return new Message($attributes, $originContent);
     }
 }
