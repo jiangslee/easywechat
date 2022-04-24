@@ -237,7 +237,7 @@ class Server implements ServerInterface
     public function getRequestMessage(?ServerRequestInterface $request = null): \EasyWeChat\Kernel\Message
     {
         $query = $this->request->getQueryParams();
-        $originContent = ($request ?? $this->request)->getBody()->getContents();
+        $originContent = (string)($request ?? $this->request)->getBody();
         $attributes = \json_decode($originContent, true);
 
         if (!\is_array($attributes)) {
